@@ -13,7 +13,7 @@ E-mail: germano.fonseca@coppe.ufrj.br or germanosfonseca@yahoo.com.br
 
 ##References
 
--[*The ECOSTRESS spectral library version 1.0*](doi.org/10.1016/j.rse.2019.05.015)
+- [*The ECOSTRESS spectral library version 1.0*](doi.org/10.1016/j.rse.2019.05.015)
 
 ## Citing
 
