@@ -8,6 +8,8 @@ This repository contains the codes and dataset used to obtain the result of the 
 numpy
 pandas
 scipy
+sklearn
+matplotlib
 ```
 
 ## Dataset
@@ -18,7 +20,7 @@ The Illuminant was obtained from [ASTM](astm.org), and the file "ASTMG173.csv" r
 ## Filter Design script
 The file "codigo.py" caontains the program. You can run the code by typing
 ```shell
-python codigo.py
+$ python codigo.py
 ```
 
 ## Contact
@@ -31,7 +33,7 @@ E-mail: germano.fonseca@coppe.ufrj.br or germanosfonseca@yahoo.com.br
 
 ## Citing
 
-Please kindly cite our paper when you use the codes. Thanks!
+Please kindly cite our paper and the code when you use it. Thanks!
 
 ```
 @article{Fonseca2023,
@@ -47,5 +49,20 @@ month = {Apr},
 year = {2023},
 url = {},
 doi = {}
+}
+```
+
+```
+@misc{fonseca_code_2023,
+title={Python Code to Design non-Gaussian SWIR Multispectral Filter},
+url={https://figshare.com/articles/software/_/22298743/0},
+DOI={10.6084/m9.figshare.22298743},
+abstractNote={<p>Python code to design non-Gaussian SWIR multispectral filter.</p>
+<p>This code was used to obtain the results of the paper "Design of non-Gaussian Multispectral SWIR Filters for Assessment of ECOSTRESS Library".</p>
+<p>More info in the README.md.</p>},
+publisher={figshare},
+author={Fonseca, Germano},
+year={2023},
+month={Mar}
 }
 ```
