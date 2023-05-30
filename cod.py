@@ -5,7 +5,7 @@ Python Code to Design non-Gaussian SWIR Multispectral Filters based on the ECOST
 
 This code was used in the paper "Design of non-Gaussian Multispectral SWIR Filters for Assessment of ECOSTRESS Library"
 @author: Germano de Souza Fonseca <germanosfonseca@yahoo.com.br>
-@date: 2023.03.23
+@date: 2023.05.30
 """
 
 import numpy as np
@@ -154,6 +154,44 @@ if __name__ == "__main__":
         Mh = np.diag( L ).dot( M )
 
         return M, Mh
+    
+    def initial_guess( filtros = 3, nfunc = 1, model = 'gauss' ):
+        '''Function to generate a random initial point to the Nelder-Mead optimizer considering the filter model
+        :param filtros: (int) number of filters
+        :param nfunc: (int) number of summed functions in the model
+        :param model: (string) the type of the filter transmittance model, options are 'gauss', 'rcos', and 'exp_cos'
+        :return x0: numpy array of shape (n,), the initial point with the parameters of the model
+        '''
+
+        if model == 'gauss' :
+            x0 = np.concatenate( ( ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
+                ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ]), axis = 1 )
+            for j in range( nfunc - 1 ):
+                x0 = np.concatenate( ( x0, ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
+                    ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ],
+                    np.random.rand( filtros )[ :, np.newaxis ]), axis = 1 )
+        elif model == 'rcos' :
+            x0 = np.concatenate( ( ( 2 * np.random.rand( filtros ) + 0.001)[:,np.newaxis],
+                ( 0.8 * np.random.rand( filtros ) + 0.9 )[:,np.newaxis]), axis = 1 )
+            for j in range( nfunc - 1 ):
+                x0 = np.concatenate( ( x0, ( 2 * np.random.rand( filtros ) + 0.001)[:,np.newaxis],
+                    ( 0.8 * np.random.rand( filtros ) + 0.9 )[:,np.newaxis], 
+                    np.random.rand( filtros )[ :, np.newaxis ] ), axis = 1 )
+        elif model == 'exp_cos' :
+            x0 = np.concatenate( ( ( 0.8 * np.random.rand( filtros ) + 0.9)[:,np.newaxis],
+                ( 0.8 * np.random.rand( filtros ) + 0.9 )[:,np.newaxis],
+                ( np.random.rand( filtros ) )[ :, np.newaxis ] ), axis = 1 )
+            for j in range( nfunc - 1 ):
+                x0 = np.concatenate( ( x0, ( 0.8 * np.random.rand( filtros ) + 0.9)[:,np.newaxis],
+                    ( 0.8 * np.random.rand( filtros ) + 0.9 )[:,np.newaxis],
+                    ( np.random.rand( filtros ) )[ :, np.newaxis ],
+                    ( np.random.rand( filtros ) )[ :, np.newaxis ]), axis = 1 )
+        else:
+            raise ValueError('Error: model not supported')
+        
+        x0 = x0.reshape(1,-1).squeeze()
+        return x0
+
     def vora_value( individuo, space_dim = 3, filtros = 3, model = 'gauss' ):
         '''Function to evaluate a weighted sum of gaussian filters using Vora value
         :param individuo: list or numpy array of shape (n,m), where each row is a set of gaussian to sum and make a filter transmittance
@@ -168,28 +206,7 @@ if __name__ == "__main__":
             
         if individuo.ndim < 2:
             individuo = individuo.reshape( filtros, -1 )
-            
-        # mean of the Gaussians
-#        mean = np.concatenate((individuo[:,0][:,np.newaxis], individuo[:,2::3] ), axis = 1)
-        # standard deviation of the Gaussians
-#        std = np.concatenate((individuo[:,1][:,np.newaxis], individuo[:,3::3] ), axis = 1)
-        # weight of the Gaussians
-#        weight = np.concatenate(( np.ones((filtros,1)), individuo[:,4::3] ), axis = 1 )
-#                
-        # wavelenght range, for instance, SWIR is from 900nm to 1700nm
-#        comp_ondas = np.arange(900,1701)/1000
-#        M = np.exp( -( comp_ondas[ :, np.newaxis, np.newaxis ] - mean )**2 / 
-#                   ( 2 * std**2 ) ) / ( std * np.sqrt( 2 * np.pi ) )
-#        M = M / np.maximum( M.max( axis = 0 ), 1e-20)
-#        
-#        n = []
-#        for i in range( M.shape[1] ):
-#            n += [ M[ :, i, : ].dot(weight[i,:] ) ]
-#            
-#        M = np.asarray( n ).T
-#        M = M / np.maximum( M.max( axis = 0 ), 1e-20)
-#        Mh = np.diag( L ).dot( M )
-        
+     
         if model == 'gauss' :
             _, Mh = gauss( individuo, filtros )
         elif model == 'rcos' :
@@ -215,7 +232,7 @@ if __name__ == "__main__":
         B =  V[:,:space_dim].T.dot(R.dot( Mh ).dot( np.linalg.pinv( Mh.T.dot( R ).dot( Mh ) ) ) )#801,n
 
         # Evaluate the estimation errors
-        erro = V[:,:space_dim].T.dot( amostras.to_numpy().T) - B.dot(Mh.T.dot(amostras.to_numpy().T))
+        erro = V[:,:space_dim].T.dot( teste.to_numpy().T) - B.dot(Mh.T.dot(teste.to_numpy().T))
         e_avg = ( erro**2 ).mean(axis = 0 ).mean()
         e_max = ( erro**2 ).mean(axis = 0 ).max() 
         
@@ -250,7 +267,7 @@ if __name__ == "__main__":
         B =  V[:,:space_dim].T.dot(R.dot( Mh ).dot( np.linalg.pinv( Mh.T.dot( R ).dot( Mh ) ) ) )#801,n
 
         # Evaluate the estimation errors
-        erro = V[:,:space_dim].T.dot( amostras.to_numpy().T) - B.dot(Mh.T.dot(amostras.to_numpy().T))
+        erro = V[:,:space_dim].T.dot( teste.to_numpy().T) - B.dot(Mh.T.dot(teste.to_numpy().T))
         e_avg = ( erro**2 ).mean(axis = 0 ).mean()
         e_max = ( erro**2 ).mean(axis = 0 ).max() 
 
@@ -268,8 +285,8 @@ if __name__ == "__main__":
     space_dim = 3
     # define the number of filters
     filtros = 3
-    # define the number of gaussians in the model
-    gaus = 1
+    # define the number of functions in the model
+    n_func = 1
     # define the model of the filter transmittance
     mode = 'gauss'
     # define the number of optimization repetitions
@@ -286,17 +303,26 @@ if __name__ == "__main__":
     print("Project of non-Gaussian filters using Nelder-Mead")
     print("Optimization parameters")
     print("Dimension of the Viewing subspace:", space_dim)
-    print("Number of filters:", filtros,'\tNumber of Gaussians:', gaus)
+    if mode == 'gauss' :
+        print("Number of filters:", filtros,'\tNumber of Gaussians:', n_func)
+    elif mode == 'rcos' :
+        print("Number of filters:", filtros,'\tNumber of Raised cosines:', n_func)
+    elif mode == 'exp_cos' :
+        print("Number of filters:", filtros,'\tNumber of Exponential-cosine:', n_func)
+    else:
+        raise ValueError('Error: model not supported')
+
     print("Repeat", rep, "times")
 
     for i in range( rep ):
-        x0 = np.concatenate( ( ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
-                              ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ]), axis = 1 )
-        for j in range(gaus-1):
-            x0 = np.concatenate( ( x0, ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
-                                  ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ],
-                                  np.random.rand( filtros )[ :, np.newaxis ]), axis = 1 )
-        x0 = x0.reshape(1,-1).squeeze()
+#        x0 = np.concatenate( ( ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
+#                              ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ]), axis = 1 )
+#        for j in range(gaus-1):
+#            x0 = np.concatenate( ( x0, ( 0.8 * np.random.rand( filtros ) + 0.9)[ :, np.newaxis ],
+#                                  ( 0.5 * np.random.rand( filtros ) + 0.001 )[ :, np.newaxis ],
+#                                  np.random.rand( filtros )[ :, np.newaxis ]), axis = 1 )
+#        x0 = x0.reshape(1,-1).squeeze()
+        x0 = initial_guess( filtros, n_func, mode )
        
        # optimize the parameters of the filter through Nelder-Mead
         res += [minimize( vora_value, x0, args = (space_dim, filtros, mode ), 
@@ -307,7 +333,7 @@ if __name__ == "__main__":
         print(res[i].x)
 
     # save variable res for log and debug
-    np.save('Res_soma_'+str(gaus)+'_gauss_'+str(filtros)+'_filtros_42_treino_'+str(i+1)+'_rep.npy', res)
+    np.save('Res_soma_'+str(n_func)+'_'+mode+'_'+str(filtros)+'_filtros_'+str(rs)+'_treino_'+str(i+1)+'_rep.npy', res)
 
     f=[]
     for i in range(len(res)):
@@ -327,23 +353,52 @@ if __name__ == "__main__":
     # Monte Carlo Simulation
     print("Monte Carlo Simulation")
 
-    M, _ = gauss( res[ f.argmax() ].x, filtros )
+    if mode == 'gauss' :
+        M, _ = gauss( res[ f.argmax() ].x, filtros )
+    elif mode == 'rcos' :
+        M, _ = rcos( res[ f.argmax() ].x, filtros )
+    elif mode == 'exp_cos' :
+        M, _ = exp_cos( res[ f.argmax() ].x, filtros )
+    else:
+        raise ValueError('Error: model not supported')
+#    M, _ = gauss( res[ f.argmax() ].x, filtros )
     e_tr = []
-    out_tol = []
+#    out_tol = []
 
     for k in range( total ):
+#        # Sampling the filter transmittance from a normal distribution with mean M and standard deviation M*tol/3
+#        # Filter transmittance perturbed
+#        M_p = ( np.random.normal(0, tol/3, (801,filtros)) +1 ) * M
+#        mh = np.diag( L ).dot( M_p )
+#        e_tr += [ err( mh ) ]
+#        # check if the sampled filter transmittance that is above the performance threshold is within the tolerance margin
+#        if e_tr[k][0] > pt:
+#            a = ( M_p / M )
+#            out_tol += [ np.abs( a-1 ).max() ]
         # Sampling the filter transmittance from a normal distribution with mean M and standard deviation M*tol/3
-        # Filter transmittance perturbed
-        M_p = ( np.random.normal(0, tol/3, (801,filtros)) +1 ) * M
+        # Samples of deviations from the nominal transmittance
+        w = np.random.normal( 0, tol/3, ( 801, filtros ) )
+        # truncate the samples of deviations
+        w[ w > tol ] = tol
+        w[ w < tol ] = -tol
+        # Perturbed filter transmittance
+        M_p = ( 1 + w ) * M
         mh = np.diag( L ).dot( M_p )
         e_tr += [ err( mh ) ]
-        # check if the sampled filter transmittance that is above the performance threshold is within the tolerance margin
-        if e_tr[k][0] > pt:
-            a = ( M_p / M )
-            out_tol += [ np.abs( a-1 ).max() ]
 
     e_tr = np.asarray( e_tr )
-    out_tol= np.asarray( out_tol )
+#    out_tol= np.asarray( out_tol )
+
+    # Number of samples with e_avg < pt
+    n = ( e_tr[:,0] < pt ).shape
+    # Estimated yield
+    rend_est = n / total
+    # Confidence interval
+    L = 3 * np.sqrt( rend_est * ( 1-rend_est ) / total )
+    print("Estimated yield:", rend_est*100,"\%")
+    print("Confidence interval:", rend_est*100,"+-",L*100,"\%")
+    print("Confidence level: 99.73\%")
+
 
     hist = plt.hist( e_tr[:,0], 50 )
     hist = np.concatenate( ( np.asarray( hist[1] )[ :-1, np.newaxis ], np.asarray( hist[0] )[:, np.newaxis] ), axis = 1 )
